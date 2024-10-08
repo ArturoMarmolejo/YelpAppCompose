@@ -107,4 +107,5 @@ dependencies {
 
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)
+    implementation("androidx.compose.material3:material3-window-size-class:1.3.0")
 }

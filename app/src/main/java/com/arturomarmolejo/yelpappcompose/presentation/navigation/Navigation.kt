@@ -20,8 +20,11 @@ fun Navigation(
         composable("HomeScreen") {
             HomeScreen(navHostController, yelpViewModel)
         }
-        composable("DetailsScreen/{item}") {
-           DetailsScreen()
+        composable("DetailsScreen/{itemId}") { backStackEntry ->
+           DetailsScreen(navBackStackEntry = backStackEntry, yelpViewModel = yelpViewModel)
+        }
+        composable("MapScreen") {
+            //TO-DO: MapScreen
         }
     }
 }
