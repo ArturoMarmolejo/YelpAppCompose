@@ -52,6 +52,7 @@ import com.arturomarmolejo.yelpappcompose.R
 import com.arturomarmolejo.yelpappcompose.core.UIState
 import com.arturomarmolejo.yelpappcompose.data.model.Businesse
 import com.arturomarmolejo.yelpappcompose.presentation.navigation.VerticalNavigationBar
+import com.arturomarmolejo.yelpappcompose.presentation.navigation.VerticalNavigationDrawer
 import com.arturomarmolejo.yelpappcompose.presentation.navigation.VerticalNavigationRail
 import com.arturomarmolejo.yelpappcompose.presentation.viewmodel.YelpViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -68,71 +69,13 @@ private const val SIGNIFICANT_DISTANCE_THRESHOLD = 100 // in meters
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun HomeScreen(
+    context: Context,
     navController: NavHostController,
     yelpViewModel: YelpViewModel,
     modifier: Modifier = Modifier
 ) {
 
-    val context = LocalContext.current
     val windowSizeClass = calculateWindowSizeClass(context as Activity)
-    var location by remember {
-        mutableStateOf<Location?>(null)
-    }
-    var shouldRequestLocation by remember {
-        mutableStateOf(true)
-    }
-
-    val permissionState = rememberPermissionState(
-        permission = Manifest.permission.ACCESS_COARSE_LOCATION
-    )
-
-    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-    val locationRequest = LocationRequest.Builder(10000L).build()
-
-    //Check location settings
-    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-    val isLocationEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-
-
-    LaunchedEffect(key1 = permissionState) {
-        if (!permissionState.status.isGranted) {
-            permissionState.launchPermissionRequest()
-        }
-    }
-
-    if (permissionState.status.isGranted) {
-        if (isLocationEnabled) {
-            //Request location updates
-            val locationCallback = object  : LocationCallback () {
-                override fun onLocationResult(result: LocationResult) {
-                    location = result.lastLocation
-                    shouldRequestLocation = false //Stop requesting location, lest it keeps updating the location value
-                }
-            }
-
-            LaunchedEffect(key1 = shouldRequestLocation) { //Only launch when should request location is true
-                if (shouldRequestLocation) {
-                    try {
-                        fusedLocationClient.requestLocationUpdates(
-                            locationRequest,
-                            locationCallback,
-                            Looper.getMainLooper()
-                        )
-                    } catch (e: Exception) {
-                        Toast.makeText(context,"Location not found", Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-
-            //Use the location value
-            location?.let { currentLocation ->
-                yelpViewModel.getAllBusinessesByLocation(currentLocation.latitude, currentLocation.longitude)
-            }
-        } else {
-            Log.d("HomeScreen", "HomeScreen: No location enabled")
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         val state = yelpViewModel.allBusinessesByLocation.collectAsStateWithLifecycle().value
@@ -151,11 +94,11 @@ fun HomeScreen(
                                 VerticalNavigationRail(navController)
                             }
                             WindowWidthSizeClass.Expanded -> {
-                                VerticalNavigationRail(navController)
+                                VerticalNavigationDrawer(navController)
                             }
                         }
-                    }
-                ) {
+                    },
+                ) { padding ->
                     BusinessesList(
                         businesses = state.response.businesses,
                         navController = navController
@@ -210,7 +153,7 @@ fun BusinessItem(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
                AsyncImage(
-                   modifier = modifier.size(100.dp).padding(end = 8.dp),
+                   modifier = modifier.size(100.dp),
                    model = businesse.imageUrl,
                    contentDescription = null,
                    placeholder = painterResource(R.drawable.baseline_place_24),
